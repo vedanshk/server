@@ -1,6 +1,5 @@
 const passport = require('passport');
 const mongoose = require('mongoose');
-require('dotenv').config();
 const User = mongoose.model('users');
 
 passport.serializeUser((user, done) => {
@@ -11,7 +10,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser((id, done) => {
 
-    User.findById({ id }).then(user => {
+    User.findById({ _id:id }).then(user => {
 
         done(null, user);
 
@@ -33,35 +32,31 @@ const GOOGLE_CLIENT_SECRET = process.env.CLIENT_SECRET;
 passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: "/auth/google/callback"
+    callbackURL: "/auth/google/callback",
+    proxy: true
 
 }, (accessToken, refreshToken, profile, done) => {
 
-    User.findOne({ googleId: profile.id }).then((user) => {
+    User.findOne({ googleId: profile.id }).then((existingUser) => {
 
-        if (user) {
+        if (existingUser) {
 
             // we already have a record with the googleId
-            done(null, user);
+            done(null, existingUser);
 
         } else {
 
             const user = new User({ googleId: profile.id });
 
-            user.save().then((existingUser) => {
+            user.save().then((user) => {
 
-                done(null, existingUser);
+                done(null, user);
 
             });
 
         }
 
-    }).catch(err => {
-
-        done(err, false);
-
-
-    });
+    })
 
 
 }));
